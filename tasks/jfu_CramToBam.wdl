@@ -23,6 +23,11 @@ workflow CC_Crams{
         Array [File] bams = cram2bam.bam
         Array [File] bais = cram2bam.bai
     }
+
+    meta {
+        author: "Jack Fu"
+        email: "jmfu@mgh.harvard.edu"
+    }
 }
 task cram2bam {
     File intervals_exons
