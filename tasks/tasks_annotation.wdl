@@ -323,7 +323,7 @@ task estimate_cohort_AF{
 
 
 #Adds cohort allele frequency filter-related columns to variants file for downstream filtering
-task filter_CAF {
+task flag_CAF {
 
 	input {
 		File infile
@@ -350,7 +350,7 @@ task filter_CAF {
 }
 
 #Adds Outlier filter-related columns to variants file for downstream filtering
-task filter_outlier {
+task flag_outlier {
 
 	input {
 		File infile

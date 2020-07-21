@@ -16,6 +16,8 @@ version 1.0
 
 import "https://raw.githubusercontent.com/alexanderhsieh/EM-mosaic-pipeline/master/tasks/tasks_gvcf_to_denovo.wdl" as gvcf_to_denovo
 import "https://raw.githubusercontent.com/alexanderhsieh/EM-mosaic-pipeline/master/tasks/tasks_annotation.wdl" as annotation
+import "https://raw.githubusercontent.com/alexanderhsieh/EM-mosaic-pipeline/master/tasks/tasks_filtered_denovo_to_mosaic.wdl" as call_mosaic
+
 
 ###########################################################################
 # WORKFLOW DEFINITION
@@ -28,12 +30,48 @@ workflow EM_mosaic_pipeline {
 		File sample_table
 		File sample_map
 		File ped
+		File parse_table_script
+		File ref_fasta
+		File ref_fasta_index
+		File dn_script 
+		Float pb_min_vaf
+		Int par_min_dp
+		Int par_max_alt
+		String output_prefix
+		String output_suffix
 
 		## annotation
+		String ref_ver
+		File cache_dir
+		File convert_script
+		File parser_script
+		File script_pv4 
+		File script_sb 
+		File script_fdr 
+		File script_rr_parse 
 		File rr_map 
 		File rr_seg 
 		File rr_lcr 
+		File script_vc  
 
+		## apply filters
+		String output_prefix
+		String CAF_outprefix
+		File estimation_script
+		Int cohort_size
+		File script_CAF
+		File outlier_script
+		Int expected_dnsnvs 
+		Int case_cutoff 
+		File script_update_filter_col
+		File script_filtct 
+		File script_printpass 
+
+		## filtered denovo to mosaic
+		File em_mosaic_script
+		Int postcut
+		Int cohort_size 
+		String output_prefix
 
 	}
 
@@ -122,7 +160,7 @@ workflow EM_mosaic_pipeline {
 			script = convert_script
 	}
 
-	# Step 1: generate VEP annotations
+	# generate VEP annotations
 	call annotation.run_vep {
 		input:
 			ref = ref_ver,
@@ -131,36 +169,36 @@ workflow EM_mosaic_pipeline {
 			cache_dir = cache_dir
 	}
 
-	# Step 2: Parse and append VEP columns to original vcf file
+	# Parse and append VEP columns to original vcf file
 	call annotation.add_vep_cols {
 		input:
-			original_variants = variants,
+			original_variants = gather_shards.out,
 			vep_vcf = run_vep.vep_out,
 			script = parser_script
 	}
 
-	#run PV4 filter
+	# flag GATK RankSum values (similar to samtools PV4)
 	call annotation.flag_PV4 {
 		input:
 			infile = add_vep_cols.out,
 			script = script_pv4
 	}
 
-	#run SB (strand bias) filter
+	# flag SB (strand bias) 
 	call annotation.flag_SB {
 		input:
 			infile = flag_PV4.out,
 			script = script_sb
 	}
 
-	#run FDR (FDR-based min altdp) filter
+	# flag FDR (FDR-based min altdp) 
 	call annotation.flag_FDR {
 		input:
 			infile = flag_SB.out,
 			script = script_fdr
 	}
 
-	#run RR (repeat region) filter
+	# flag RR (repeat region) 
 	call annotation.flag_RR {
 		input:
 			infile = flag_FDR.out,
@@ -170,26 +208,84 @@ workflow EM_mosaic_pipeline {
 			lcr = rr_lcr
 	}
 
-	#run VC (variant cluster) filter
+	# flag VC (variant cluster) 
 	call annotation.flag_VC {
 		input:
 			infile = flag_RR.out,
 			script = script_vc
 	}
 
+	#########################################################
+	## Steps from Apply Filters
+	#########################################################
+	# estimate cohort AF from raw de novos file
+	call annotation.estimate_cohort_AF {
+		input:
+			script = estimation_script,
+			infile = flag_VC.out,
+			cohort_size = cohort_size
+	}
 
+	# run CAF (cohort allele frequency)
+	call annotation.flag_CAF {
+		input:
+			infile = flag_VC.out,
+			script = script_CAF,
+			caf_file = estimate_cohort_AF.out
+	}
 
+	#run outlier filter
+	call annotation.flag_outlier {
+		input:
+			infile = filter_CAF.out,
+			script = outlier_script,
+			cohort_size = cohort_size,
+			exp = expected_dnsnvs,
+			cutoff = case_cutoff
+	}
+
+	#########################################################
+	## parse filter flags, summarize filtering, output variants passing all filters
+	#########################################################
+	#run update_filter_column script to combine filter flags into single column
+	call annotation.update_filt_col {
+		input:
+			infile = filter_outlier.out,
+			script = script_update_filter_col
+	}
+
+	#run script to summarize counts of variants flagged by each filter
+	call annotation.summarize_counts {
+		input:
+			infile = update_filt_col.outfile,
+			script = script_filtct
+	}
+
+	#run script to write out variants passing all filters, to be used as input to EM-mosaic
+	call annotation.print_pass_vars {
+		input:
+			infile = update_filt_col.outfile,
+			script = script_printpass
+	}
+
+	#########################################################
+	## Run EM-mosaic
+	#########################################################
+	#run EM_mosaic
+	call call_mosaic.detect_mosaic {
+		input:
+			infile = update_filt_col.outfile,
+			script = em_mosaic_script,
+			postcut = postcut,
+			outprefix = output_prefix
+	}
 
 
 
 	output {
 		File denovos = detect_mosaic.denovos
 		File mosaics = detect_mosaic.mosaics
-		File plot_EM = detect_mosaic.plot_EM
-		File plot_QQ = detect_mosaic.plot_QQ
-		File plot_overdispersion = detect_mosaic.plot_overdispersion
-		File plot_dp_vs_vaf = detect_mosaic.plot_dp_vs_vaf
-		File plot_vaf_vs_post = detect_mosaic.plot_vaf_vs_post
+		Array[File] output_plots = detect_mosaic.output_plots
 	}
 
 
