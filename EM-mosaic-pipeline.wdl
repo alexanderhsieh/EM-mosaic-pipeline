@@ -3,8 +3,16 @@ version 1.0
 ## Copyright Broad Institute, 2020
 ##
 ## This WDL defines the workflow for using EM-mosaic to call mosaic SNVs from 
-## single-sample gVCFs belonging to trios.  
+## a cohort of trios (in single-sample gzipped gVCF format).  
 ## Note: currently limited to human whole-exome-sequencing data
+## 
+## Requirements:
+## - cohort of trios with gVCFs for each individual
+## - pedigree file with columns: family ID, sample ID, father ID, mother ID, sex, affected status
+## - sample map (from Picard) with 2 columns: sample ID, GVCF path
+## - sample table (from Terra) with columns: entity:sample_id, output_vcf, output_vcf_index
+## - 
+## 
 ##
 ## LICENSING :
 ## This script is released under the WDL source code license (BSD-3) (see LICENSE in
@@ -90,6 +98,10 @@ workflow EM_mosaic_pipeline {
 	}
 
 	## Read in table and coerce as Array[File] corresponding to trios
+	## output 7-column table: 
+	## 		sample_id, 
+	##      sample gvcf google bucket path, father gvcf path, mother gvcf path
+	##      sample gvcf index google bucket path, father gvcf index path, mother gvcf index path
 	call gvcf_to_denovo.read_table {
 		input:
 			table = read_terra_table.out
@@ -237,7 +249,7 @@ workflow EM_mosaic_pipeline {
 	#run outlier filter
 	call annotation.flag_outlier {
 		input:
-			infile = filter_CAF.out,
+			infile = flag_CAF.out,
 			script = outlier_script,
 			cohort_size = cohort_size,
 			exp = expected_dnsnvs,
@@ -250,7 +262,7 @@ workflow EM_mosaic_pipeline {
 	#run update_filter_column script to combine filter flags into single column
 	call annotation.update_filt_col {
 		input:
-			infile = filter_outlier.out,
+			infile = flag_outlier.out,
 			script = script_update_filter_col
 	}
 
@@ -279,8 +291,6 @@ workflow EM_mosaic_pipeline {
 			postcut = postcut,
 			outprefix = output_prefix
 	}
-
-
 
 	output {
 		File denovos = detect_mosaic.denovos
