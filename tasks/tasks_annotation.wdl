@@ -2,7 +2,7 @@ version 1.0
 
 ## Copyright Broad Institute, 2020
 ##
-## This WDL defines tasks calling de novo SNVs from a table of single-sample gVCF paths
+## This WDL defines tasks for annotating an raw de novo SNV callset
 ##
 ##
 ## LICENSING :
@@ -291,5 +291,173 @@ task flag_VC {
 
 	output {
 		File out = "~{outprefix}.VC.txt"
+	}
+}
+
+# estimates cohort AF
+task estimate_cohort_AF{
+
+	input {
+		File script
+		File infile
+		Int cohort_size
+	}
+
+	String outprefix = basename(infile, '.denovo.VEP.PV4.SB.FDR.RR.VC.txt')
+	String outfname = "AC.~{outprefix}.txt"
+
+	command {
+		python ~{script} -i ~{infile} -n ~{cohort_size} -o ~{outfname}
+	}
+
+	runtime {
+		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		preemptible: 3
+		maxRetries: 3
+	}
+
+	output {
+		File out = "~{outfname}"
+	}
+}
+
+
+#Adds cohort allele frequency filter-related columns to variants file for downstream filtering
+task filter_CAF {
+
+	input {
+		File infile
+		File script
+		File caf_file
+	}
+
+	String outprefix = basename(infile, '.txt')
+
+	command {
+		python ~{script} -i ~{infile} -c ~{caf_file} -o "~{outprefix}.CAF.txt"
+	}
+
+	runtime {
+		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		preemptible: 3
+		maxRetries: 3
+	}
+
+	output {
+		File out = "~{outprefix}.CAF.txt"
+	}
+
+}
+
+#Adds Outlier filter-related columns to variants file for downstream filtering
+task filter_outlier {
+
+	input {
+		File infile
+		File script
+		Int cohort_size
+		Int exp
+		Int cutoff
+	}
+
+	String outprefix = basename(infile, '.txt')
+
+	command {
+		Rscript ~{script} ~{infile} ~{outprefix} ~{cohort_size} ~{exp} ~{cutoff}
+	}
+
+	runtime {
+		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		preemptible: 3
+		maxRetries: 3
+	}
+
+	output {
+		File out = "~{outprefix}.OUT.txt"
+	}
+
+}
+
+#Parses filter information from upstream steps and combines into an updated filter column
+#Note: assumes 'filter' col already exists (from upstream reformat_vcf.py step)
+#Note: also applies filters for 
+#   (1) popfreq (MAF)
+#   (2) protein-coding (COD)
+#   (3) MUC/HLA genes (MUC-HLA)
+#   (4) dbSNP (dbSNP)
+task update_filt_col {
+
+	input {
+		File infile 
+		File script 
+	}
+
+	String outsuffix = basename(infile, '.VEP.PV4.SB.FDR.RR.VC.CAF.OUT.txt')
+	String outfname = "ADfile.~{outsuffix}.txt"
+
+	command {
+		python ~{script} -i ~{infile} -o ~{outfname}
+	}
+
+	runtime {
+		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		preemptible: 3
+		maxRetries: 3
+	}
+
+	output {
+		File outfile = "~{outfname}"
+	}
+
+}
+
+
+#Parses filter column and summarize how many variants are flagged by each filter
+task summarize_counts {
+
+	input {
+		File infile 
+		File script
+	}
+
+	String outprefix = basename(infile, '.txt')
+
+	command {
+		python ~{script} ~{infile} "~{outprefix}.SUMMARY_COUNTS.txt"
+	}
+
+	runtime {
+		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		preemptible: 3
+		maxRetries: 3
+	}
+
+	output {
+		File outfile = "~{outprefix}.SUMMARY_COUNTS.txt"
+	}
+}
+
+#Prints out all variants that pass all filters and that belong to samples that are not flagged as outliers
+task print_pass_vars {
+
+	input {
+		File infile 
+		File script 
+	}
+	
+	String outprefix = basename(infile, '.txt')
+
+	command {
+		python ~{script} ~{infile} "~{outprefix}.PASS.txt"
+	}
+
+	runtime {
+		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		preemptible: 3
+		maxRetries: 3
+	}
+
+	output {
+		File outfile = "~{outprefix}.PASS.txt"
 	}
 }

@@ -2,7 +2,7 @@ version 1.0
 
 ## Copyright Broad Institute, 2020
 ##
-## This WDL defines tasks calling de novo SNVs from a table of single-sample gVCF paths
+## This WDL defines tasks for calling de novo SNVs from a table of single-sample gVCF paths
 ##
 ##
 ## LICENSING :

@@ -14,7 +14,8 @@ version 1.0
 ## page at https://hub.docker.com/r/broadinstitute/genomes-in-the-cloud/ for detailed
 ## licensing information pertaining to the included programs.
 
-import 'https://raw.githubusercontent.com/alexanderhsieh/EM-mosaic-pipeline/master/tasks/tasks_gvcf_to_denovo.wdl' as gvcf_to_denovo
+import "https://raw.githubusercontent.com/alexanderhsieh/EM-mosaic-pipeline/master/tasks/tasks_gvcf_to_denovo.wdl" as gvcf_to_denovo
+import "https://raw.githubusercontent.com/alexanderhsieh/EM-mosaic-pipeline/master/tasks/tasks_annotation.wdl" as annotation
 
 ###########################################################################
 # WORKFLOW DEFINITION
@@ -23,9 +24,15 @@ workflow EM_mosaic_pipeline {
 
 	input {
 
+		## gvcf to denovo
 		File sample_table
 		File sample_map
 		File ped
+
+		## annotation
+		File rr_map 
+		File rr_seg 
+		File rr_lcr 
 
 
 	}
@@ -105,9 +112,70 @@ workflow EM_mosaic_pipeline {
 	}
 
 	##########################################################################
-	## Call de novo SNVs from gVCFs in sample map
+	## Annotate raw de novo variants
 	##########################################################################
 	
+	# convert txt to vcf
+	call annotation.txt_to_vcf {
+		input:
+			variants = gather_shards.out,
+			script = convert_script
+	}
+
+	# Step 1: generate VEP annotations
+	call annotation.run_vep {
+		input:
+			ref = ref_ver,
+			vcf = txt_to_vcf.out,
+			vcf_idx = txt_to_vcf.idx,
+			cache_dir = cache_dir
+	}
+
+	# Step 2: Parse and append VEP columns to original vcf file
+	call annotation.add_vep_cols {
+		input:
+			original_variants = variants,
+			vep_vcf = run_vep.vep_out,
+			script = parser_script
+	}
+
+	#run PV4 filter
+	call annotation.flag_PV4 {
+		input:
+			infile = add_vep_cols.out,
+			script = script_pv4
+	}
+
+	#run SB (strand bias) filter
+	call annotation.flag_SB {
+		input:
+			infile = flag_PV4.out,
+			script = script_sb
+	}
+
+	#run FDR (FDR-based min altdp) filter
+	call annotation.flag_FDR {
+		input:
+			infile = flag_SB.out,
+			script = script_fdr
+	}
+
+	#run RR (repeat region) filter
+	call annotation.flag_RR {
+		input:
+			infile = flag_FDR.out,
+			script_parse = script_rr_parse,
+			map = rr_map,
+			seg = rr_seg,
+			lcr = rr_lcr
+	}
+
+	#run VC (variant cluster) filter
+	call annotation.flag_VC {
+		input:
+			infile = flag_RR.out,
+			script = script_vc
+	}
 
 
 
