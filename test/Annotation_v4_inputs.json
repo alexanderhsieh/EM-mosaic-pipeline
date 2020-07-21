@@ -1,9 +1,0 @@
-{
-  "annotate_vcf_v4.parser_config": "/Users/ahsieh/Documents/talkowski_lab/projects/asd_mosaicism/wdl_EM_mosaic/src/convert_txt_to_vcf.config.yml",
-  "annotate_vcf_v4.parser_cols": "SYMBOL,Gene,BIOTYPE,Consequence,Existing_variation,MAX_AF,MAX_AF_POPS",
-  "annotate_vcf_v4.cache_dir": "/Users/ahsieh/vep_data",
-  "annotate_vcf_v4.vcf": "/Users/ahsieh/Documents/talkowski_lab/projects/asd_mosaicism/wdl_EM_mosaic/test_pcgc/data/denovo.no_filt.vcf",
-  "annotate_vcf_v4.ref_ver": "GRCh37",
-  "annotate_vcf_v4.parser_script": "/Users/ahsieh/Documents/talkowski_lab/projects/asd_mosaicism/wdl_EM_mosaic/src/parse_and_append_vep_cols.py"
-}
-
