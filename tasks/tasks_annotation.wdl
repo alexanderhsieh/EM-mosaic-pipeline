@@ -17,7 +17,6 @@ version 1.0
 task txt_to_vcf {
 	input {
 		File variants
-		File script
 	}
 
 	String outprefix = basename(variants, '.raw.txt')  
@@ -26,7 +25,7 @@ task txt_to_vcf {
 	command {
 		set -euo pipefail
 
-		python ~{script} -i ~{variants} -o ~{outfname}
+		python /opt/convert_txt_to_vcf.py -i ~{variants} -o ~{outfname}
 
 		sort -k1,1 -k2,2n ~{outfname} | bgzip -c > "~{outfname}.gz"
 
@@ -34,7 +33,7 @@ task txt_to_vcf {
 	}
 
 	runtime {
-		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		docker: "alexanderhsieh/em-mosaic-base:latest"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -117,7 +116,6 @@ task add_vep_cols {
 	input {
 		File original_variants
 		File vep_vcf
-		File script
 		String cols = "SYMBOL,Gene,BIOTYPE,Consequence,Existing_variation,MAX_AF,MAX_AF_POPS"
 	}
 
@@ -125,11 +123,11 @@ task add_vep_cols {
 
 
 	command {
-		python ~{script} -i ~{original_variants} -v ~{vep_vcf} -c ~{cols} -o "${outprefix}.VEP.txt"
+		python /opt/parse_and_append_vep_cols.py -i ~{original_variants} -v ~{vep_vcf} -c ~{cols} -o "${outprefix}.VEP.txt"
 	}
 
 	runtime {
-		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		docker: "alexanderhsieh/em-mosaic-base:latest"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -144,17 +142,16 @@ task add_vep_cols {
 task flag_PV4 {
 	input {
 		File infile
-		File script
 	}
 
 	String outprefix = basename(infile, '.txt')
 
 	command {
-		python ~{script} ~{infile} "~{outprefix}.PV4.txt" 
+		python /opt/filter_GATK_RankSum.py ~{infile} "~{outprefix}.PV4.txt" 
 	}
 
 	runtime {
-		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		docker: "alexanderhsieh/em-mosaic-base:latest"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -168,18 +165,17 @@ task flag_PV4 {
 task flag_SB {
 	input {
 		File infile
-		File script
 		Float cutoff_or = 3.0
 		Float cutoff_p = 0.001
 	}
 	String outprefix = basename(infile, '.txt')
 
 	command {
-		Rscript ~{script} ~{infile} ~{outprefix} ~{cutoff_or} ~{cutoff_p}
+		Rscript /opt/filter_strandbias.R ~{infile} ~{outprefix} ~{cutoff_or} ~{cutoff_p}
 	}
 
 	runtime {
-		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		docker: "alexanderhsieh/em-mosaic-base:latest"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -193,7 +189,6 @@ task flag_SB {
 task flag_FDR {
 	input {
 		File infile
-		File script
 		Float min_vaf = 0.01
 		Int size = 30000000
 		Float e_fp = 0.01
@@ -202,11 +197,11 @@ task flag_FDR {
 	String outprefix = basename(infile, '.txt')
 
 	command {
-		Rscript ~{script} ~{infile} ~{outprefix} ~{min_vaf} ~{size} ~{e_fp} ~{seq_err}
+		Rscript /opt/filter_fdrmin.R ~{infile} ~{outprefix} ~{min_vaf} ~{size} ~{e_fp} ~{seq_err}
 	}
 
 	runtime {
-		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		docker: "alexanderhsieh/em-mosaic-base:latest"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -220,7 +215,6 @@ task flag_FDR {
 task flag_RR {
 	input {
 		File infile
-		File script_parse
 
 		File map
 		File seg
@@ -246,12 +240,12 @@ task flag_RR {
 		bedtools intersect -wa -wb -a "tmp.bed" -b ~{lcr} ~{map} ~{seg} -filenames -sorted > "bed.isec.out.txt"
 
 		## parse bedtools intersect output and append relevant columns to input file
-		python ~{script_parse} ~{infile} "bed.isec.out.txt" > "~{outprefix}.RR.txt"
+		python /opt/parse_bedtools_isec.py ~{infile} "bed.isec.out.txt" > "~{outprefix}.RR.txt"
 
 	>>>
 
 	runtime {
-		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		docker: "alexanderhsieh/em-mosaic-base:latest"
 		preemptible: 3
 		maxRetries: 3
 		memory: "16G"
@@ -280,11 +274,11 @@ task flag_VC {
 	String outprefix = basename(infile, '.txt')
 
 	command {
-		python ~{script} ~{infile} ~{dist} "~{outprefix}.VC.txt"
+		python /opt/flag_vclust.py ~{infile} ~{dist} "~{outprefix}.VC.txt"
 	}
 
 	runtime {
-		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		docker: "alexanderhsieh/em-mosaic-base:latest"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -298,7 +292,6 @@ task flag_VC {
 task estimate_cohort_AF{
 
 	input {
-		File script
 		File infile
 		Int cohort_size
 	}
@@ -307,11 +300,11 @@ task estimate_cohort_AF{
 	String outfname = "AC.~{outprefix}.txt"
 
 	command {
-		python ~{script} -i ~{infile} -n ~{cohort_size} -o ~{outfname}
+		python /opt/estimate_cohort_AF-simple.py -i ~{infile} -n ~{cohort_size} -o ~{outfname}
 	}
 
 	runtime {
-		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		docker: "alexanderhsieh/em-mosaic-base:latest"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -327,18 +320,17 @@ task flag_CAF {
 
 	input {
 		File infile
-		File script
 		File caf_file
 	}
 
 	String outprefix = basename(infile, '.txt')
 
 	command {
-		python ~{script} -i ~{infile} -c ~{caf_file} -o "~{outprefix}.CAF.txt"
+		python /opt/filter_cohort_AF.py -i ~{infile} -c ~{caf_file} -o "~{outprefix}.CAF.txt"
 	}
 
 	runtime {
-		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		docker: "alexanderhsieh/em-mosaic-base:latest"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -354,7 +346,6 @@ task flag_outlier {
 
 	input {
 		File infile
-		File script
 		Int cohort_size
 		Int exp
 		Int cutoff
@@ -363,11 +354,11 @@ task flag_outlier {
 	String outprefix = basename(infile, '.txt')
 
 	command {
-		Rscript ~{script} ~{infile} ~{outprefix} ~{cohort_size} ~{exp} ~{cutoff}
+		Rscript /opt/filter_outlier_v2.R ~{infile} ~{outprefix} ~{cohort_size} ~{exp} ~{cutoff}
 	}
 
 	runtime {
-		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		docker: "alexanderhsieh/em-mosaic-base:latest"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -389,18 +380,17 @@ task update_filt_col {
 
 	input {
 		File infile 
-		File script 
 	}
 
 	String outsuffix = basename(infile, '.VEP.PV4.SB.FDR.RR.VC.CAF.OUT.txt')
 	String outfname = "ADfile.~{outsuffix}.txt"
 
 	command {
-		python ~{script} -i ~{infile} -o ~{outfname}
+		python /opt/update_filter_col_v2.py -i ~{infile} -o ~{outfname}
 	}
 
 	runtime {
-		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		docker: "alexanderhsieh/em-mosaic-base:latest"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -417,17 +407,16 @@ task summarize_counts {
 
 	input {
 		File infile 
-		File script
 	}
 
 	String outprefix = basename(infile, '.txt')
 
 	command {
-		python ~{script} ~{infile} "~{outprefix}.SUMMARY_COUNTS.txt"
+		python /opt/get_filt_ct_v2.py ~{infile} "~{outprefix}.SUMMARY_COUNTS.txt"
 	}
 
 	runtime {
-		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		docker: "alexanderhsieh/em-mosaic-base:latest"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -442,17 +431,16 @@ task print_pass_vars {
 
 	input {
 		File infile 
-		File script 
 	}
 	
 	String outprefix = basename(infile, '.txt')
 
 	command {
-		python ~{script} ~{infile} "~{outprefix}.PASS.txt"
+		python /opt/print_pass_only.py ~{infile} "~{outprefix}.PASS.txt"
 	}
 
 	runtime {
-		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		docker: "alexanderhsieh/em-mosaic-base:latest"
 		preemptible: 3
 		maxRetries: 3
 	}

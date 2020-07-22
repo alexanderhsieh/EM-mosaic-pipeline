@@ -38,10 +38,8 @@ workflow EM_mosaic_pipeline {
 		File sample_table
 		File sample_map
 		File ped
-		File parse_table_script
 		File ref_fasta
 		File ref_fasta_index
-		File dn_script 
 		Float pb_min_vaf
 		Int par_min_dp
 		Int par_max_alt
@@ -51,32 +49,18 @@ workflow EM_mosaic_pipeline {
 		## annotation
 		String ref_ver
 		File cache_dir
-		File convert_script
-		File parser_script
-		File script_pv4 
-		File script_sb 
-		File script_fdr 
-		File script_rr_parse 
 		File rr_map 
 		File rr_seg 
 		File rr_lcr 
-		File script_vc  
 
 		## apply filters
 		String output_prefix
 		String CAF_outprefix
-		File estimation_script
 		Int cohort_size
-		File script_CAF
-		File outlier_script
 		Int expected_dnsnvs 
 		Int case_cutoff 
-		File script_update_filter_col
-		File script_filtct 
-		File script_printpass 
 
 		## filtered denovo to mosaic
-		File em_mosaic_script
 		Int postcut
 		Int cohort_size 
 		String output_prefix
@@ -91,7 +75,6 @@ workflow EM_mosaic_pipeline {
 	## Generate table that enables grouping trio gvcfs together as Array[File]
 	call gvcf_to_denovo.read_terra_table{
 		input:
-			script = parse_table_script,
 			terra_table = sample_table,
 			sample_map = sample_map,
 			ped = ped
@@ -141,7 +124,6 @@ workflow EM_mosaic_pipeline {
 
 		call gvcf_to_denovo.call_denovos {
 			input:
-				script = dn_script,
 				sample_id = sample_id,
 				trio_readgroup_ids = merge_trio_gvcf.rg_ids,
 				gvcf = merge_trio_gvcf.out_gvcf,
@@ -168,8 +150,7 @@ workflow EM_mosaic_pipeline {
 	# convert txt to vcf
 	call annotation.txt_to_vcf {
 		input:
-			variants = gather_shards.out,
-			script = convert_script
+			variants = gather_shards.out
 	}
 
 	# generate VEP annotations
@@ -185,36 +166,31 @@ workflow EM_mosaic_pipeline {
 	call annotation.add_vep_cols {
 		input:
 			original_variants = gather_shards.out,
-			vep_vcf = run_vep.vep_out,
-			script = parser_script
+			vep_vcf = run_vep.vep_out
 	}
 
 	# flag GATK RankSum values (similar to samtools PV4)
 	call annotation.flag_PV4 {
 		input:
-			infile = add_vep_cols.out,
-			script = script_pv4
+			infile = add_vep_cols.out
 	}
 
 	# flag SB (strand bias) 
 	call annotation.flag_SB {
 		input:
-			infile = flag_PV4.out,
-			script = script_sb
+			infile = flag_PV4.out
 	}
 
 	# flag FDR (FDR-based min altdp) 
 	call annotation.flag_FDR {
 		input:
-			infile = flag_SB.out,
-			script = script_fdr
+			infile = flag_SB.out
 	}
 
 	# flag RR (repeat region) 
 	call annotation.flag_RR {
 		input:
 			infile = flag_FDR.out,
-			script_parse = script_rr_parse,
 			map = rr_map,
 			seg = rr_seg,
 			lcr = rr_lcr
@@ -223,8 +199,7 @@ workflow EM_mosaic_pipeline {
 	# flag VC (variant cluster) 
 	call annotation.flag_VC {
 		input:
-			infile = flag_RR.out,
-			script = script_vc
+			infile = flag_RR.out
 	}
 
 	#########################################################
@@ -233,7 +208,6 @@ workflow EM_mosaic_pipeline {
 	# estimate cohort AF from raw de novos file
 	call annotation.estimate_cohort_AF {
 		input:
-			script = estimation_script,
 			infile = flag_VC.out,
 			cohort_size = cohort_size
 	}
@@ -242,7 +216,6 @@ workflow EM_mosaic_pipeline {
 	call annotation.flag_CAF {
 		input:
 			infile = flag_VC.out,
-			script = script_CAF,
 			caf_file = estimate_cohort_AF.out
 	}
 
@@ -250,7 +223,6 @@ workflow EM_mosaic_pipeline {
 	call annotation.flag_outlier {
 		input:
 			infile = flag_CAF.out,
-			script = outlier_script,
 			cohort_size = cohort_size,
 			exp = expected_dnsnvs,
 			cutoff = case_cutoff
@@ -262,22 +234,19 @@ workflow EM_mosaic_pipeline {
 	#run update_filter_column script to combine filter flags into single column
 	call annotation.update_filt_col {
 		input:
-			infile = flag_outlier.out,
-			script = script_update_filter_col
+			infile = flag_outlier.out
 	}
 
 	#run script to summarize counts of variants flagged by each filter
 	call annotation.summarize_counts {
 		input:
-			infile = update_filt_col.outfile,
-			script = script_filtct
+			infile = update_filt_col.outfile
 	}
 
 	#run script to write out variants passing all filters, to be used as input to EM-mosaic
 	call annotation.print_pass_vars {
 		input:
-			infile = update_filt_col.outfile,
-			script = script_printpass
+			infile = update_filt_col.outfile
 	}
 
 	#########################################################
@@ -287,7 +256,6 @@ workflow EM_mosaic_pipeline {
 	call call_mosaic.detect_mosaic {
 		input:
 			infile = update_filt_col.outfile,
-			script = em_mosaic_script,
 			postcut = postcut,
 			outprefix = output_prefix
 	}

@@ -23,11 +23,11 @@ task read_terra_table {
 	}
 
 	command {
-		python ~{script} -i ~{terra_table} -m ~{sample_map} -p ~{ped} > "sample_attributes.tsv"
+		python /opt/parse_sample_table.py -i ~{terra_table} -m ~{sample_map} -p ~{ped} > "sample_attributes.tsv"
 	}
 
 	runtime {
-		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		docker: "alexanderhsieh/em-mosaic-base:latest"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -114,8 +114,6 @@ task merge_trio_gvcf {
 ##		 here, we parse from the GVCF filename upstream when creating sample_attributes.tsv 
 task call_denovos {
 	input {
-		File script
-
 		String sample_id
 
 		Array[String] trio_readgroup_ids
@@ -139,13 +137,13 @@ task call_denovos {
 
 		echo "~{pb_id} ~{fa_id} ~{mo_id}"
 
-		python3 ${script} -s ~{pb_id} -f ~{fa_id} -m ~{mo_id} -g ~{gvcf} -x ~{pb_min_vaf} -y ~{par_max_alt} -z ~{par_min_dp} -o ~{output_file}
+		python /opt/merged_gvcf_to_denovo.py -s ~{pb_id} -f ~{fa_id} -m ~{mo_id} -g ~{gvcf} -x ~{pb_min_vaf} -y ~{par_max_alt} -z ~{par_min_dp} -o ~{output_file}
 
 		grep "^id" ~{output_file} > "header.txt"
 	}
 
 	runtime {
-		docker: "mwalker174/sv-pipeline:mw-00c-stitch-65060a1"
+		docker: "alexanderhsieh/em-mosaic-base:latest"
 		preemptible: 3
 		maxRetries: 3
 	}

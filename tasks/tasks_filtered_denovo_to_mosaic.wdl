@@ -17,13 +17,12 @@ version 1.0
 task detect_mosaic {
 	input {
 		File infile
-		File script
 		Int postcut 
 		String outprefix
 	}
 
 	command {
-		Rscript ~{script} ~{infile} ~{outprefix} ~{postcut} 
+		Rscript /opt/EM-mosaic.v1.R ~{infile} ~{outprefix} ~{postcut} 
 	}
 
 	runtime {
