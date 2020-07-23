@@ -63,7 +63,6 @@ workflow EM_mosaic_pipeline {
 		## filtered denovo to mosaic
 		Int postcut
 		Int cohort_size 
-		String output_prefix
 
 	}
 
