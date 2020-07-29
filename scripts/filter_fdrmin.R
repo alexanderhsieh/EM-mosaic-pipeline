@@ -5,16 +5,26 @@ if(length(args)!=6){
 }
 fname <- toString(args[1])
 outprefix <- toString(args[2])
-min_vaf <- as.numeric(args[3])
+min_vaf <- as.numeric(args[3]) # deprecated, not used
 size <- as.numeric(args[4])
 fp_threshold <- as.numeric(args[5])
 error_rate <- as.numeric(args[6])
 #print(c(paste("Input File", fname, sep=': ') , paste("Output file prefix", outprefix, sep=': '), paste("Minimum altdp", min, sep=': '), paste("Exome/Genome size (bp)",size, sep=': '), paste("FP threshold",fp_threshold, sep=': '), paste("Sequencing Error Rate",error_rate, sep=': ')))
 
 ## Function to find minimum number of alternate read support, given DP and Expected FP 0.01 and Exome size 3e7
-## default values: min=6; size=3e7; fp_threshold=0.01; error_rate=0.005
-find_min_alt <- function(N, min_vaf, size, fp_threshold, error_rate){
-  out.min = min_vaf * N
+## default values: min=5; size=3e7; fp_threshold=0.01; error_rate=0.005
+# NOTE 1: ppois(i, N*error_rate/3) = at a genomic location with N reads, 
+#       if we expect N*error_rate/3 reads to be due to sequencing error, 
+#       what is the probability we observe <= i reads due to sequencing error?
+# NOTE 2: 1-ppois(i, N*error_rate/3) = at a genomic location with N reads, 
+#       if we expect N*error_rate/3 reads to be due to sequencing error, 
+#       what is the probability we observe at least i reads due to sequencing error?
+# NOTE 3:  (1-ppois(i, N*error_rate/3)) * 3e7 = at a genomic location with N reads, 
+#       if we expect N*error_rate/3 reads to be due to sequencing error, 
+#       what is the expected number of locations exome-wide with at least i reads 
+#       due to sequencing error (i.e. false positives)?
+find_min_alt <- function(N, size, fp_threshold, error_rate){
+  out.min = 5 # default value
   for(i in 1:(N/2)){
     exp.fp <- (1-ppois(i, N*(error_rate/3)))*size
     if(exp.fp <= fp_threshold){
@@ -34,7 +44,7 @@ a <- read.table(fname, sep='\t', header=T, quote='"', na.strings=c('.'))
 ## duplicate table
 x <- a
 x$N <- x$refdp + x$altdp
-x$fdr.min.alt <- mapply(find_min_alt, x$N, min_vaf, size, fp_threshold, error_rate)
+x$fdr.min.alt <- mapply(find_min_alt, x$N, size, fp_threshold, error_rate)
 
 ## copy back updated filter column
 a$fdr.min.alt <- x$fdr.min.alt
