@@ -267,7 +267,6 @@ task flag_RR {
 task flag_VC {
 	input {
 		File infile
-		File script 
 		Int dist = 10# distance (in bp) used to define a "cluster"
 	}
 

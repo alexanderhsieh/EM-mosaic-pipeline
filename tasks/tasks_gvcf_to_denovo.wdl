@@ -15,7 +15,6 @@ version 1.0
 
 task read_terra_table {
 	input {
-		File script
 
 		File terra_table
 		File sample_map
