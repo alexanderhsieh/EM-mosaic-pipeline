@@ -85,9 +85,9 @@ RUN apt-get -qqy update --fix-missing && \
           -c bioconda \
           python=3.6.5 \
           ${PYTHON_PKGS} && \
-    #git clone https://github.com/pysam-developers/pysam.git /opt/pysam && \
-    #cd /opt/pysam && \
-    #git checkout af6ff23322af451b8ab6ea78b53676c45ae0a779 && \
+    git clone https://github.com/pysam-developers/pysam.git /opt/pysam && \
+    cd /opt/pysam && \
+    git checkout af6ff23322af451b8ab6ea78b53676c45ae0a779 && \
     pip install -e . && \
     rm -rf ${HOME}/.cache/pip && \
     conda clean -tipsy && \
