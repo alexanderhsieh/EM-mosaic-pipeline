@@ -237,7 +237,7 @@ task flag_RR {
 		awk -F '\t' '{if($1!="id") print "chr"$2"\t"$3"\t"$3}' ~{infile} | sort -k1,1 -k2,2n > "tmp.bed"
 
 		## run bedtools intersect
-		bedtools intersect -wa -wb -a "tmp.bed" -b ~{lcr} ~{map} ~{seg} -filenames -sorted > "bed.isec.out.txt"
+		bedtools intersect -wa -wb -a "tmp.bed" -b ~{lcr} ~{map} ~{seg} -filenames > "bed.isec.out.txt"
 
 		## parse bedtools intersect output and append relevant columns to input file
 		python /opt/parse_bedtools_isec.py ~{infile} "bed.isec.out.txt" > "~{outprefix}.RR.txt"
