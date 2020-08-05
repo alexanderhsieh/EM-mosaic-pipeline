@@ -141,8 +141,11 @@ task call_denovos {
 
 		grep "^id" ~{output_file} > "header.txt"
 
-		## replace readgroup ID with sample ID from inputs
+		## fix id discordance
+		echo "converting ~{pb_id} to ~{sample_id}"
+
 		sed -i 's/~{pb_id}/~{sample_id}/g' ~{output_file}
+
 	}
 
 	runtime {
