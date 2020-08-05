@@ -299,7 +299,7 @@ task estimate_cohort_AF{
 	String outfname = "AC.~{outprefix}.txt"
 
 	command {
-		python /opt/estimate_cohort_AF-simple.py -i ~{infile} -n ~{cohort_size} -o ~{outfname}
+		python /opt/estimate_cohort_AF-SIMPLE.py -i ~{infile} -n ~{cohort_size} -o ~{outfname}
 	}
 
 	runtime {
