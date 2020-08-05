@@ -130,117 +130,120 @@ with gzip.open(gvcf, 'rb') as f:
 
 
           ## parse alt allele
-          alt = tmp[idx['ALT']].strip(',<NON_REF>')
+          #alt = tmp[idx['ALT']].strip(',<NON_REF>')
+          alt = tmp[idx['ALT']].split(',')
 
           
           ## how to handle multiallelic sites? e.g. chr1    1646352 .       A       C,G,<NON_REF>
           ## iterate over all alternate alleles present in ALT
-          for a in alt.split(','):
+          #for a in alt.split(','):
+          for a in alt:
+            if not a == '<NON_REF>':
+              if not a == '*': # ignore point deletions for now; messy when matching alleles with parents
+                #if len(ref) == 1 and len(a) == 1: # ignore indels for now;
+                if len(ref) == 1 and len(ref) == len(a):  
 
-
-            if not a == '*': # ignore point deletions for now; messy when matching alleles with parents
-              #if len(ref) == 1 and len(a) == 1: # ignore indels for now;
-              if len(ref) == 1 and len(ref) == len(a):  
-
-                if len(tmp) == len(idx.keys()): # ignore lines with missing fields
-                  
-                  # Get index of current alternate allele
-                  pb_altidx = alt.split(',').index(a) + 1
-
-
-                  # save INFO field
-                  info = tmp[idx['INFO']]
-
-                  # create dictionary of FORMAT:GT mapping
-                  fmt = tmp[idx['FORMAT']].split(':')
-                  
-
-                  pb_gt = tmp[idx[sample_id]].split(':') ## ASSUMES THAT SAMPLE GENOTYPE INFORMATION IS IN THE LAST COLUMN; didn't use ID since column ID differs from sample id....
-                  pb_gtd = dict(zip(fmt, pb_gt)) # e.g. {'GT': '0/1', 'AD': '5,7,0', 'GQ': '99', 'PL': '157,0,104,172,125,297', 'SB': '5,0,7,0', 'DP': '12'}
-
-                  fa_gt = tmp[idx[faid]].split(':')
-                  fa_gtd = dict(zip(fmt, fa_gt))
-
-                  mo_gt = tmp[idx[moid]].split(':')
-                  mo_gtd = dict(zip(fmt, mo_gt))
-
-                  ## CHECK THAT ALL NECESSARY INFORMATION IS PRESENT
-                  #if not (pb_gtd['GT'] == './.'): ## ignore sites with missing genotypes
-                  #  if ('AD'in pb_gtd) and ('DP' in pb_gtd): # ignore sites with no AD or DP information
-                  if not './.' in [pb_gtd['GT'], fa_gtd['GT'], mo_gtd['GT']]:
+                  if len(tmp) == len(idx.keys()): # ignore lines with missing fields
                     
-                    if 'AD' in pb_gtd and 'DP' in pb_gtd and 'AD' in fa_gtd and 'DP' in fa_gtd and 'AD' in mo_gtd and 'DP' in mo_gtd:
-
-                      if len(pb_gtd['AD'].split(',')) > 1: # ensure there is alternate allele read support
-                        #if not pb_gtd['GT'] in ['0/0', '0|0']:
-                          
-                        #print(line)
+                    # Get index of current alternate allele
+                    #pb_altidx = alt.split(',').index(a) + 1
+                    pb_altidx = alt.index(a) + 1 # need to leave <NON_REF> in to correctly parse alt allele index
 
 
-                        ## parse strand-specific allelic depth information
-                        adf = pb_gtd['F1R2']
-                        adr = pb_gtd['F2R1']
+                    # save INFO field
+                    info = tmp[idx['INFO']]
 
-                        adfref = adf.split(',')[0]
-                        adrref = adr.split(',')[0]
+                    # create dictionary of FORMAT:GT mapping
+                    fmt = tmp[idx['FORMAT']].split(':')
+                    
 
-                        adfalt = adf.split(',')[pb_altidx]
-                        adralt = adr.split(',')[pb_altidx]
+                    pb_gt = tmp[idx[sample_id]].split(':') ## ASSUMES THAT SAMPLE GENOTYPE INFORMATION IS IN THE LAST COLUMN; didn't use ID since column ID differs from sample id....
+                    pb_gtd = dict(zip(fmt, pb_gt)) # e.g. {'GT': '0/1', 'AD': '5,7,0', 'GQ': '99', 'PL': '157,0,104,172,125,297', 'SB': '5,0,7,0', 'DP': '12'}
 
-                        pb_refdp = pb_gtd['AD'].split(',')[0]
-                        pb_altdp = pb_gtd['AD'].split(',')[pb_altidx]
-                        if pb_altdp == '.':
-                          pb_altdp = '0'
-                        pb_dp = pb_gtd['DP']
+                    fa_gt = tmp[idx[faid]].split(':')
+                    fa_gtd = dict(zip(fmt, fa_gt))
 
-                        if int(pb_dp) > 0:
-                          pb_vaf = float(pb_altdp)/float(pb_dp)
-                        else:
-                          pb_vaf = 0.0
+                    mo_gt = tmp[idx[moid]].split(':')
+                    mo_gtd = dict(zip(fmt, mo_gt))
+
+                    ## CHECK THAT ALL NECESSARY INFORMATION IS PRESENT
+                    #if not (pb_gtd['GT'] == './.'): ## ignore sites with missing genotypes
+                    #  if ('AD'in pb_gtd) and ('DP' in pb_gtd): # ignore sites with no AD or DP information
+                    if not './.' in [pb_gtd['GT'], fa_gtd['GT'], mo_gtd['GT']]:
+                      
+                      if 'AD' in pb_gtd and 'DP' in pb_gtd and 'AD' in fa_gtd and 'DP' in fa_gtd and 'AD' in mo_gtd and 'DP' in mo_gtd:
+
+                        if len(pb_gtd['AD'].split(',')) > 1: # ensure there is alternate allele read support
+                          #if not pb_gtd['GT'] in ['0/0', '0|0']:
+                            
+                          #print(line)
 
 
-                        ## parse parental information
-                        fa_dp = fa_gtd['DP']
-                        fa_refdp = fa_gtd['AD'].split(',')[0]
+                          ## parse strand-specific allelic depth information
+                          adf = pb_gtd['F1R2']
+                          adr = pb_gtd['F2R1']
 
-                        if fa_gtd['AD'] == '.': # handle case where AD is just .
-                          fa_altdp = '0'
-                        else:
-                          fa_altdp = fa_gtd['AD'].split(',')[pb_altidx]
-                          if fa_altdp == '.': # handle case where AD is 10,.,3
+                          adfref = adf.split(',')[0]
+                          adrref = adr.split(',')[0]
+
+                          adfalt = adf.split(',')[pb_altidx]
+                          adralt = adr.split(',')[pb_altidx]
+
+                          pb_refdp = pb_gtd['AD'].split(',')[0]
+                          pb_altdp = pb_gtd['AD'].split(',')[pb_altidx]
+                          if pb_altdp == '.':
+                            pb_altdp = '0'
+                          #pb_dp = pb_gtd['DP']
+                          pb_dp = int(pb_refdp) + int(pb_altdp)
+
+                          if int(pb_dp) > 0:
+                            pb_vaf = float(pb_altdp)/float(pb_dp)
+                          else:
+                            pb_vaf = 0.0
+
+
+                          ## parse parental information
+                          fa_dp = fa_gtd['DP']
+                          fa_refdp = fa_gtd['AD'].split(',')[0]
+
+                          if fa_gtd['AD'] == '.': # handle case where AD is just .
                             fa_altdp = '0'
-                        
-                        mo_dp = mo_gtd['DP']
-                        mo_refdp = mo_gtd['AD'].split(',')[0]
-                        #mo_altdp = mo_gtd['AD'].split(',')[pb_altidx]
+                          else:
+                            fa_altdp = fa_gtd['AD'].split(',')[pb_altidx]
+                            if fa_altdp == '.': # handle case where AD is 10,.,3
+                              fa_altdp = '0'
+                          
+                          mo_dp = mo_gtd['DP']
+                          mo_refdp = mo_gtd['AD'].split(',')[0]
+                          #mo_altdp = mo_gtd['AD'].split(',')[pb_altidx]
 
-                        if mo_gtd['AD'] == '.': # handle case where AD is just .
-                          mo_altdp = '0'
-                        else:
-                          mo_altdp = mo_gtd['AD'].split(',')[pb_altidx]
-                          if mo_altdp == '.': # handle case where AD is 10,.,3
+                          if mo_gtd['AD'] == '.': # handle case where AD is just .
                             mo_altdp = '0'
-                        
+                          else:
+                            mo_altdp = mo_gtd['AD'].split(',')[pb_altidx]
+                            if mo_altdp == '.': # handle case where AD is 10,.,3
+                              mo_altdp = '0'
+                          
 
-                        ## APPLY DE NOVO CALLING CRITERIA
-                        if not (int(pb_refdp) == 0): # ignore hom alt sites
-                          if float(pb_vaf) >= float(pb_min_vaf):
-                            if int(fa_altdp) <= int(par_max_alt) and int(mo_altdp) <= int(par_max_alt):
-                              if int(fa_dp) >= int(par_min_dp) and int(mo_dp) >= int(par_min_dp):
-                                out = map(str, [sample_id, chr.strip('chr'), pos, ref, a, pb_refdp, pb_altdp, pb_dp, adfref, adfalt, adrref, adralt])
+                          ## APPLY DE NOVO CALLING CRITERIA
+                          if not (int(pb_refdp) == 0): # ignore hom alt sites
+                            if float(pb_vaf) >= float(pb_min_vaf):
+                              if int(fa_altdp) <= int(par_max_alt) and int(mo_altdp) <= int(par_max_alt):
+                                if int(fa_dp) >= int(par_min_dp) and int(mo_dp) >= int(par_min_dp):
+                                  out = map(str, [sample_id, chr.strip('chr'), pos, ref, a, pb_refdp, pb_altdp, pb_dp, adfref, adfalt, adrref, adralt])
 
-                                #print '\t'.join(out) + '\t' + '\t'.join(tmp) + '\t' + tmpfa_d['FORMAT'] + '\t' + tmpfa[-1] + '\t' + tmpmo_d['FORMAT'] + '\t' + tmpmo[-1]
-                                #outf.write('\t'.join(out) + '\t' + '\t'.join(tmp) + '\t' + tmpfa_d['FORMAT'] + '\t' + tmpfa[-1] + '\t' + tmpmo_d['FORMAT'] + '\t' + tmpmo[-1] + '\n')
-                                outstring = '\t'.join(out) + '\t' + '\t'.join(tmp[:idx['FORMAT']+1]) + '\t' + ':'.join(pb_gt) + '\t' +  ':'.join(fa_gt) + '\t' + ':'.join(mo_gt)
-                                #print(outstring)
-                                outf.write(outstring + '\n')
-                                # deal with empty output?
-                                outf.flush()
-                                os.fsync(outf)
+                                  #print '\t'.join(out) + '\t' + '\t'.join(tmp) + '\t' + tmpfa_d['FORMAT'] + '\t' + tmpfa[-1] + '\t' + tmpmo_d['FORMAT'] + '\t' + tmpmo[-1]
+                                  #outf.write('\t'.join(out) + '\t' + '\t'.join(tmp) + '\t' + tmpfa_d['FORMAT'] + '\t' + tmpfa[-1] + '\t' + tmpmo_d['FORMAT'] + '\t' + tmpmo[-1] + '\n')
+                                  outstring = '\t'.join(out) + '\t' + '\t'.join(tmp[:idx['FORMAT']+1]) + '\t' + ':'.join(pb_gt) + '\t' +  ':'.join(fa_gt) + '\t' + ':'.join(mo_gt)
+                                  #print(outstring)
+                                  outf.write(outstring + '\n')
+                                  # deal with empty output?
+                                  outf.flush()
+                                  os.fsync(outf)
 
-                                dnct += 1
+                                  dnct += 1
 
-                                print('## %d de novo variants found ...'%(dnct))
+                                  print('## %d de novo variants found ...'%(dnct))
 
 
 
