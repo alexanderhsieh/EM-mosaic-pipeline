@@ -13,6 +13,10 @@ version 1.0
 ## page at https://hub.docker.com/r/broadinstitute/genomes-in-the-cloud/ for detailed
 ## licensing information pertaining to the included programs.
 
+## Note: for ped, requires standard 6-column format at minimum:
+## 		family ID, sample ID, father ID, mother ID, sex, affected status
+## Note: for terra table, requires 2 columns: entity:sample_id, path to output_vcf_index
+## Note: for sample map, requires 2 columns: sample_id, path to output_vcf
 task read_terra_table {
 	input {
 
