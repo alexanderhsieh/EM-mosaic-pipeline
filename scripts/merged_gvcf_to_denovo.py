@@ -33,6 +33,7 @@ import os
 ####################################################################################################
 parser = OptionParser()
 parser.add_option('-s', '--sid', dest='sample_id',help='sample id')
+parser.add_option('-r', '--rgid', dest='rg_id',help='sample readgroup id')
 parser.add_option('-f', '--faid', dest='faid', help='father id')
 parser.add_option('-m', '--moid', dest='moid', help='mother id')
 parser.add_option('-g', '--gvcf', dest='gvcf', help='trio gvcf')
@@ -43,7 +44,7 @@ parser.add_option('-o', '--output', dest='output_file',help='output tab-separate
 (options, args) = parser.parse_args()
 
 ## check all arguments present
-if (options.sample_id == None or options.gvcf == None or options.faid == None or options.moid == None  or options.pb_min_vaf == None or options.par_max_alt == None or options.par_min_dp == None):
+if (options.sample_id == None or options.rg_id == None or options.gvcf == None or options.faid == None or options.moid == None  or options.pb_min_vaf == None or options.par_max_alt == None or options.par_min_dp == None):
 	print('\n' + '## ERROR: missing arguments' + '\n')
 	parser.print_help()
 	print('\n')
@@ -51,6 +52,7 @@ if (options.sample_id == None or options.gvcf == None or options.faid == None or
 
 
 sample_id = options.sample_id
+rg_id = options.rg_id
 faid = options.faid
 moid = options.moid
 gvcf = options.gvcf
@@ -76,7 +78,7 @@ print('')
 print('## ITERATING OVER VARIANT LINES')
 print('')
 
-head = ['id', 'chr', 'pos', 'ref', 'alt', 'refdp', 'altdp', 'dp', 'adfref', 'adfalt', 'adrref', 'adralt', 'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'S_GT', 'FA_GT', 'MO_GT']
+head = ['id', 'rg_id', 'chr', 'pos', 'ref', 'alt', 'refdp', 'altdp', 'dp', 'adfref', 'adfalt', 'adrref', 'adralt', 'CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT', 'S_GT', 'FA_GT', 'MO_GT']
 #print '\t'.join(head)
 outf.write('\t'.join(head) + '\n')
 
@@ -157,7 +159,8 @@ with gzip.open(gvcf, 'rb') as f:
                     fmt = tmp[idx['FORMAT']].split(':')
                     
 
-                    pb_gt = tmp[idx[sample_id]].split(':') ## ASSUMES THAT SAMPLE GENOTYPE INFORMATION IS IN THE LAST COLUMN; didn't use ID since column ID differs from sample id....
+                    #pb_gt = tmp[idx[sample_id]].split(':') ## ASSUMES THAT SAMPLE GENOTYPE INFORMATION IS IN THE LAST COLUMN; didn't use ID since column ID differs from sample id....
+                    pb_gt = tmp[idx[rg_id]].split(':') ## ASSUMES THAT SAMPLE GENOTYPE INFORMATION IS IN THE LAST COLUMN; didn't use ID since column ID differs from sample id....
                     pb_gtd = dict(zip(fmt, pb_gt)) # e.g. {'GT': '0/1', 'AD': '5,7,0', 'GQ': '99', 'PL': '157,0,104,172,125,297', 'SB': '5,0,7,0', 'DP': '12'}
 
                     fa_gt = tmp[idx[faid]].split(':')
@@ -230,7 +233,7 @@ with gzip.open(gvcf, 'rb') as f:
                             if float(pb_vaf) >= float(pb_min_vaf):
                               if int(fa_altdp) <= int(par_max_alt) and int(mo_altdp) <= int(par_max_alt):
                                 if int(fa_dp) >= int(par_min_dp) and int(mo_dp) >= int(par_min_dp):
-                                  out = map(str, [sample_id, chr.strip('chr'), pos, ref, a, pb_refdp, pb_altdp, pb_dp, adfref, adfalt, adrref, adralt])
+                                  out = map(str, [sample_id, rg_id, chr.strip('chr'), pos, ref, a, pb_refdp, pb_altdp, pb_dp, adfref, adfalt, adrref, adralt])
 
                                   #print '\t'.join(out) + '\t' + '\t'.join(tmp) + '\t' + tmpfa_d['FORMAT'] + '\t' + tmpfa[-1] + '\t' + tmpmo_d['FORMAT'] + '\t' + tmpmo[-1]
                                   #outf.write('\t'.join(out) + '\t' + '\t'.join(tmp) + '\t' + tmpfa_d['FORMAT'] + '\t' + tmpfa[-1] + '\t' + tmpmo_d['FORMAT'] + '\t' + tmpmo[-1] + '\n')

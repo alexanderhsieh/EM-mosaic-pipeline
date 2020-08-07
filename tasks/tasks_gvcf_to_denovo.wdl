@@ -140,14 +140,14 @@ task call_denovos {
 
 		echo "~{pb_id} ~{fa_id} ~{mo_id}"
 
-		python /opt/merged_gvcf_to_denovo.py -s ~{pb_id} -f ~{fa_id} -m ~{mo_id} -g ~{gvcf} -x ~{pb_min_vaf} -y ~{par_max_alt} -z ~{par_min_dp} -o ~{output_file}
+		python /opt/merged_gvcf_to_denovo.py -s ~{sample_id} -r ~{pb_id} -f ~{fa_id} -m ~{mo_id} -g ~{gvcf} -x ~{pb_min_vaf} -y ~{par_max_alt} -z ~{par_min_dp} -o ~{output_file}
 
 		grep "^id" ~{output_file} > "header.txt"
 
 		## fix id discordance
-		echo "converting ~{pb_id} to ~{sample_id}"
+		#echo "converting ~{pb_id} to ~{sample_id}"
 
-		sed -i 's/~{pb_id}/~{sample_id}/g' ~{output_file}
+		#sed -i 's/~{pb_id}/~{sample_id}/g' ~{output_file}
 
 	}
 
