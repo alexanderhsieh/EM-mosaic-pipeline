@@ -234,7 +234,7 @@ task flag_RR {
 
 		## NOTE: using alternate command brackets to accommodate awk - otherwise will get unrecognized token error
 		## format input as bedfile
-		awk -F '\t' '{if($1!="id") print "chr"$2"\t"$3"\t"$3}' ~{infile} | sort -k1,1 -k2,2n > "tmp.bed"
+		awk -F '\t' '{if($1!="id") print "chr"$3"\t"$4"\t"$4}' ~{infile} | sort -k1,1 -k2,2n > "tmp.bed"
 
 		## run bedtools intersect
 		bedtools intersect -wa -wb -a "tmp.bed" -b ~{lcr} ~{map} ~{seg} -filenames > "bed.isec.out.txt"
