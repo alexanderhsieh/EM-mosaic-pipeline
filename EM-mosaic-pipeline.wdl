@@ -34,8 +34,6 @@ workflow EM_mosaic_pipeline {
 
 	input {
 
-		String sample_id
-
 		## gvcf to denovo
 		File sample_table
 		File sample_map
