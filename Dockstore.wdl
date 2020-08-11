@@ -94,23 +94,9 @@ workflow EM_mosaic_pipeline {
 
 		Int n_cols = length(read_table.out[0])
 
-		## parse columns containing gvcf google bucket paths 
-		scatter (j in range(n_cols)) {
-			if (j >=1 && j<=3) {
-				File gvcf_columns = read_table.out[i][j]
-			}
-		}
-
-		## parse columns containing gvcf index google bucket paths
-		scatter (j in range(n_cols)) {
-			if (j >=4 && j<=6) {
-				File gvcf_index_columns = read_table.out[i][j]
-			}
-		}
-
 		String sample_id = read_table.out[i][0]
-		Array[File] selected_gvcf_columns = select_all(gvcf_columns)
-		Array[File] selected_gvcf_index_columns = select_all(gvcf_index_columns)
+		Array[File] selected_gvcf_columns = [ read_table.out[i][1], read_table.out[i][2], read_table.out[i][3] ]
+		Array[File] selected_gvcf_index_columns = [ read_table.out[i][4], read_table.out[i][5], read_table.out[i][6] ]
 
 		call gvcf_to_denovo.merge_trio_gvcf {
 			input:
@@ -229,7 +215,7 @@ workflow EM_mosaic_pipeline {
 
 	#run outlier filter
 	## NOTE: REQUIRES CLEAN DE NOVOS TO ACCURATELY IDENTIFY OUTLIERS
-	call annotation.flag_outlier as outlier2 {
+	call annotation.flag_outlier {
 		input:
 			infile = update1.outfile,
 			cohort_size = cohort_size,
@@ -240,7 +226,7 @@ workflow EM_mosaic_pipeline {
 	# 2nd run to update filter column with outlier flag information
 	call annotation.update_filt_col as update2 {
 		input:
-			infile = outlier2.out
+			infile = flag_outlier.out
 	}
 
 	#run script to summarize counts of variants flagged by each filter
