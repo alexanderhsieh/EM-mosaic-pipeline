@@ -26,7 +26,7 @@ task detect_mosaic {
 	}
 
 	runtime {
-		docker: "alexanderhsieh/em-mosaic-base:7Aug2020"
+		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
 		preemptible: 3
 		maxRetries: 3
 	}
