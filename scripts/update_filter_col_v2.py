@@ -40,7 +40,7 @@ output_file = options.output_file
 ## create dictionary of cutoff values
 ########################################
 #cutoff = {'PV4_bq': '1e-3', 'PV4_mq': '1e-6', 'PV4_rp': '1e-3', 'MAF': '1e-4', 'CAF': '0.01'}
-cutoff = {'PV4_bq': '0.05', 'PV4_mq': '0.05', 'PV4_rp': '0.05', 'MAF': '1e-4', 'CAF': '0.01'}
+cutoff = {'PV4_bq': '0.05', 'PV4_mq': '0.05', 'PV4_rp': '0.05', 'MAF': '1e-4', 'CAF': '0.003'}
   
 #print('')
 #print(cutoff)
@@ -85,7 +85,10 @@ with open(input_file, 'r') as f:
 			else:
 				cohort_af = float(tmp[idx['cohort_AF']])
 
-			outlier_flag = tmp[idx['outlier_flag']]
+			if 'outlier_flag' in idx:
+				outlier_flag = tmp[idx['outlier_flag']]
+			else:
+				outlier_flag = 'FALSE'
 			if outlier_flag == '.':
 				outlier_flag = 'FALSE'
 
