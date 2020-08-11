@@ -218,20 +218,28 @@ workflow EM_mosaic_pipeline {
 			caf_file = estimate_cohort_AF.out
 	}
 
-	#run outlier filter
-	call annotation.flag_outlier {
-		input:
-			infile = flag_CAF.out,
-			cohort_size = cohort_size,
-			exp = expected_dnsnvs,
-			cutoff = case_cutoff
-	}
 
 	#########################################################
 	## parse filter flags, summarize filtering, output variants passing all filters
 	#########################################################
 	#run update_filter_column script to combine filter flags into single column
-	call annotation.update_filt_col {
+	call annotation.update_filt_col as update1 {
+		input:
+			infile = flag_CAF.out
+	}
+
+	#run outlier filter
+	## NOTE: REQUIRES CLEAN DE NOVOS TO ACCURATELY IDENTIFY OUTLIERS
+	call annotation.flag_outlier {
+		input:
+			infile = update1.outfile,
+			cohort_size = cohort_size,
+			exp = expected_dnsnvs,
+			cutoff = case_cutoff
+	}
+
+	# 2nd run to update filter column with outlier flag information
+	call annotation.update_filt_col as update2 {
 		input:
 			infile = flag_outlier.out
 	}
@@ -239,13 +247,13 @@ workflow EM_mosaic_pipeline {
 	#run script to summarize counts of variants flagged by each filter
 	call annotation.summarize_counts {
 		input:
-			infile = update_filt_col.outfile
+			infile = update2.outfile
 	}
 
 	#run script to write out variants passing all filters, to be used as input to EM-mosaic
 	call annotation.print_pass_vars {
 		input:
-			infile = update_filt_col.outfile
+			infile = update2.outfile
 	}
 
 	#########################################################
@@ -254,7 +262,7 @@ workflow EM_mosaic_pipeline {
 	#run EM_mosaic
 	call call_mosaic.detect_mosaic {
 		input:
-			infile = update_filt_col.outfile,
+			infile = update2.outfile,
 			postcut = postcut,
 			outprefix = output_prefix
 	}
