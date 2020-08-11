@@ -218,6 +218,15 @@ workflow EM_mosaic_pipeline {
 			caf_file = estimate_cohort_AF.out
 	}
 
+	#run outlier filter
+	## NOTE: REQUIRES CLEAN DE NOVOS TO ACCURATELY IDENTIFY OUTLIERS
+	call annotation.flag_outlier as outlier1 {
+		input:
+			infile = flag_CAF.out,
+			cohort_size = cohort_size,
+			exp = expected_dnsnvs,
+			cutoff = case_cutoff
+	}
 
 	#########################################################
 	## parse filter flags, summarize filtering, output variants passing all filters
@@ -225,12 +234,12 @@ workflow EM_mosaic_pipeline {
 	#run update_filter_column script to combine filter flags into single column
 	call annotation.update_filt_col as update1 {
 		input:
-			infile = flag_CAF.out
+			infile = outlier1.out
 	}
 
 	#run outlier filter
 	## NOTE: REQUIRES CLEAN DE NOVOS TO ACCURATELY IDENTIFY OUTLIERS
-	call annotation.flag_outlier {
+	call annotation.flag_outlier as outlier2 {
 		input:
 			infile = update1.outfile,
 			cohort_size = cohort_size,
@@ -241,7 +250,7 @@ workflow EM_mosaic_pipeline {
 	# 2nd run to update filter column with outlier flag information
 	call annotation.update_filt_col as update2 {
 		input:
-			infile = flag_outlier.out
+			infile = outlier2.out
 	}
 
 	#run script to summarize counts of variants flagged by each filter
