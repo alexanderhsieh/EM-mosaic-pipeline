@@ -117,6 +117,8 @@ task add_vep_cols {
 		File original_variants
 		File vep_vcf
 		String cols = "SYMBOL,Gene,BIOTYPE,Consequence,Existing_variation,MAX_AF,MAX_AF_POPS"
+		Int disk_size = 100 # test 100G for VEP?
+
 	}
 
 	String outprefix = basename(original_variants, '.raw.txt')
@@ -129,6 +131,8 @@ task add_vep_cols {
 	runtime {
 		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
 		memory: "8G"
+		disks: "local-disk " + disk_size + " HDD"
+		bootDiskSizeGb: disk_size
 		preemptible: 3
 		maxRetries: 3
 	}
