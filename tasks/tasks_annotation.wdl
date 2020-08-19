@@ -128,6 +128,7 @@ task add_vep_cols {
 
 	runtime {
 		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
+		memory: "8G"
 		preemptible: 3
 		maxRetries: 3
 	}
