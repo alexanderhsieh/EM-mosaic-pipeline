@@ -33,7 +33,7 @@ task txt_to_vcf {
 	}
 
 	runtime {
-		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
+		docker: "alexanderhsieh/em-mosaic-base:26Aug2020"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -129,7 +129,7 @@ task add_vep_cols {
 	}
 
 	runtime {
-		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
+		docker: "alexanderhsieh/em-mosaic-base:26Aug2020"
 		memory: "8G"
 		disks: "local-disk " + disk_size + " HDD"
 		bootDiskSizeGb: disk_size
@@ -156,7 +156,7 @@ task flag_PV4 {
 	}
 
 	runtime {
-		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
+		docker: "alexanderhsieh/em-mosaic-base:26Aug2020"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -180,7 +180,7 @@ task flag_SB {
 	}
 
 	runtime {
-		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
+		docker: "alexanderhsieh/em-mosaic-base:26Aug2020"
 		memory: "8G"
 		preemptible: 3
 		maxRetries: 3
@@ -207,7 +207,7 @@ task flag_FDR {
 	}
 
 	runtime {
-		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
+		docker: "alexanderhsieh/em-mosaic-base:26Aug2020"
 		memory: "8G"
 		preemptible: 3
 		maxRetries: 3
@@ -252,7 +252,7 @@ task flag_RR {
 	>>>
 
 	runtime {
-		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
+		docker: "alexanderhsieh/em-mosaic-base:26Aug2020"
 		preemptible: 3
 		maxRetries: 3
 		memory: "16G"
@@ -284,7 +284,7 @@ task flag_VC {
 	}
 
 	runtime {
-		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
+		docker: "alexanderhsieh/em-mosaic-base:26Aug2020"
 		memory: "8G"
 		preemptible: 3
 		maxRetries: 3
@@ -311,7 +311,7 @@ task estimate_cohort_AF{
 	}
 
 	runtime {
-		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
+		docker: "alexanderhsieh/em-mosaic-base:26Aug2020"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -337,7 +337,7 @@ task flag_CAF {
 	}
 
 	runtime {
-		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
+		docker: "alexanderhsieh/em-mosaic-base:26Aug2020"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -362,7 +362,7 @@ task flag_shared {
 	}
 
 	runtime {
-		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
+		docker: "alexanderhsieh/em-mosaic-base:26Aug2020"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -390,7 +390,7 @@ task flag_outlier {
 	}
 
 	runtime {
-		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
+		docker: "alexanderhsieh/em-mosaic-base:26Aug2020"
 		memory: "8G"
 		preemptible: 3
 		maxRetries: 3
@@ -425,7 +425,7 @@ task update_filt_col {
 	}
 
 	runtime {
-		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
+		docker: "alexanderhsieh/em-mosaic-base:26Aug2020"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -451,7 +451,7 @@ task summarize_counts {
 	}
 
 	runtime {
-		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
+		docker: "alexanderhsieh/em-mosaic-base:26Aug2020"
 		preemptible: 3
 		maxRetries: 3
 	}
@@ -475,7 +475,7 @@ task print_pass_vars {
 	}
 
 	runtime {
-		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
+		docker: "alexanderhsieh/em-mosaic-base:26Aug2020"
 		preemptible: 3
 		maxRetries: 3
 	}
