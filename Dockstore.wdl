@@ -204,13 +204,19 @@ workflow EM_mosaic_pipeline {
 			caf_file = estimate_cohort_AF.out
 	}
 
+	call annotation.flag_shared{
+		input:
+			infile = flag_CAF.out,
+			ped = ped
+	}
+
 	#########################################################
 	## parse filter flags, summarize filtering, output variants passing all filters
 	#########################################################
 	#run update_filter_column script to combine filter flags into single column
 	call annotation.update_filt_col as update1 {
 		input:
-			infile = flag_CAF.out
+			infile = flag_shared.out
 	}
 
 	#run outlier filter

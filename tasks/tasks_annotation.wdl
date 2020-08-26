@@ -348,6 +348,31 @@ task flag_CAF {
 
 }
 
+# Adds shared de novos flag column to variants file for downstream filtering
+task flag_shared {
+
+	input {
+		File infile 
+		File ped
+	}
+	String outprefix = basename(infile, '.txt')
+
+	command {
+		python /opt/flag_shared_pb_sib.py -i ~{infile} -p ~{ped} -o "~{outprefix}.SHARE.txt"
+	}
+
+	runtime {
+		docker: "alexanderhsieh/em-mosaic-base:11Aug2020"
+		preemptible: 3
+		maxRetries: 3
+	}
+
+	output { 
+		File out = "~{outprefix}.SHARE.txt"
+	}
+
+}
+
 #Adds Outlier filter-related columns to variants file for downstream filtering
 task flag_outlier {
 
@@ -376,6 +401,8 @@ task flag_outlier {
 	}
 
 }
+
+
 
 #Parses filter information from upstream steps and combines into an updated filter column
 #Note: assumes 'filter' col already exists (from upstream reformat_vcf.py step)
