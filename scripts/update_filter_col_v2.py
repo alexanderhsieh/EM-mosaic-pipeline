@@ -78,6 +78,8 @@ with open(input_file, 'r') as f:
 			gene = tmp[idx['SYMBOL']]
 			#rsid = tmp[idx['rs_dbSNP151']] # DEPRECATED
 			rsid = tmp[idx['Existing_variation']] # DEPRECATED
+
+			share_flag = tmp[idx['shared_pb_sib']]
 			
 
 			if tmp[idx['cohort_AF']] in ['.', 'NA']:
@@ -164,6 +166,11 @@ with open(input_file, 'r') as f:
 				outfilt.append('OUT_FAIL')
 			else:
 				outfilt.append('OUT_PASS')
+
+			if share_flag == 'True':
+				outfilt.append('SHARE_FAIL')
+			else:
+				outfilt.append('SHARE_PASS')
 
 
 			## update filter column

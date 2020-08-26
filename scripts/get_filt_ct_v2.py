@@ -7,7 +7,7 @@ outf = open(sys.argv[2],'w')
 
 total = 0
 allpass = 0
-d = {'PV4':0, 'SB':0, 'FDR':0, 'RR':0, 'VC':0, 'MAF':0, 'COD':0, 'MUC-HLA':0, 'CAF':0, 'IGV':0, 'dbSNP':0, 'OUT':0}
+d = {'PV4':0, 'SB':0, 'FDR':0, 'RR':0, 'VC':0, 'MAF':0, 'COD':0, 'MUC-HLA':0, 'CAF':0, 'IGV':0, 'dbSNP':0, 'OUT':0, 'SHARE':0}
 
 with open(sys.argv[1],'r') as f1:
 	for line in f1:
