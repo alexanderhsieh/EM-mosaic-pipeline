@@ -18,11 +18,13 @@ task detect_mosaic {
 	input {
 		File infile
 		Int postcut 
+		Int sample_avg_dp
+		Int cohort_size
 		String outprefix
 	}
 
 	command {
-		Rscript /opt/EM-mosaic.v1.R ~{infile} ~{outprefix} ~{postcut} 
+		Rscript /opt/EM-mosaic.v2.R ~{infile} ~{outprefix} ~{postcut} ~{cohort_size} ~{sample_avg_dp}
 	}
 
 	runtime {
