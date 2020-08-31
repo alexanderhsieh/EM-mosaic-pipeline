@@ -64,7 +64,7 @@ mofracEM <- function(x, thetahat, op, printopt) {
   print(paste('## mosaic mean VAF', np1, sep=': '))
   print(paste('## germline mean VAF', np2, sep=': '))
   print(paste('## sum of posterior prob approach', sum(x$pp)/nrow(x), sep=': '))
-  print(paste('## true fraction', nrow(x[x$src=='mosaic',])/nrow(x), sep=': '))
+  #print(paste('## true fraction', nrow(x[x$src=='mosaic',])/nrow(x), sep=': '))
   
   ## get limits of integration for BF calculation
   minvaf <- min(x[x$ind==1,]$vaf)
@@ -76,7 +76,7 @@ mofracEM <- function(x, thetahat, op, printopt) {
     pdf(em.p)
     true_frac <- nrow(x[x$src=='mosaic',])/nrow(x)
     #p.title = paste('Variant Allele Fraction', paste('Est. Mosaic Fraction', round(nr, 4), sep=' = '),  paste('True Fraction', round(true_frac, 4), sep=' = '), sep='\n')
-    p.title = paste('Variant Allele Fraction', paste('Est. Mosaic Fraction', round(sum(x$pp)/nrow(x), 4), sep=' = '),  paste('True Fraction', round(true_frac, 4), sep=' = '), sep='\n')
+    p.title = paste('Variant Allele Fraction', paste('Est. Mosaic Fraction', round(sum(x$pp)/nrow(x), 4), sep=' = '), sep='\n')
     hist(x$altdp/x$N, br=seq(0.0, 1.0, by=0.05), freq=F, ylim=c(0, max(density(x[x$ind==2,]$altdp/x[x$ind==2,]$N)$y)+1), main=p.title, xlab="Variant Allele Fraction (VAF)", cex.axis=1.5, cex.lab=1.5)
     mo.dens <- density(x[x$ind==1,]$altdp/x[x$ind==1,]$N)$y * (nrow(x[x$ind==1,])/nrow(x)) # adjust density for mosaics by mosaic fraction
     germ.dens <- density(x[x$ind==2,]$altdp/x[x$ind==2,]$N)$y * (nrow(x[x$ind==2,])/nrow(x)) # adjust density for germline by germline fraction
@@ -90,43 +90,6 @@ mofracEM <- function(x, thetahat, op, printopt) {
   outgermvaf <- x[x$ind==2,]$vaf
   outdf <- data.frame(mofrac = rep(sum(x$pp)/nrow(x), nrow(x)), movaf = rep(np1, nrow(x)), germvaf = rep(np2, nrow(x)), minvaf = rep(minvaf,nrow(x)), maxvaf = rep(maxvaf, nrow(x)), allvaf = x$vaf, ind=x$ind)
   return(outdf) 
-}
-
-
-## Function to find minimum number of alternate read support, given DP and Expected FP 0.01 and Exome size 3e7
-find_min_alt <- function(N){
-  out.min = 6
-  for(i in 1:(N/2)){
-    exp.fp <- (1-ppois(i, N*(0.005/3)))*3e7
-    if(exp.fp <= 0.01){
-      out.min = i - 1
-      break
-    }
-  }
-  return(out.min)
-}
-
-## Function to remove outlier samples with abnormally high denovo counts
-## 1. calculate expected number of samples with 0, 1, 2, ... denovo counts given a mean(# denovos/sample) and cohortsize
-## 2. cutoff = denovo count value for which expected number of samples is <1
-## 3. remove all samples with denovo counts > cutoff as outliers
-remove_outliers <- function(x, cohortsize, op){
-  samples <- names(table(x$id))
-  counts <- unname(table(x$id))
-  df <- cbind.data.frame(samples, counts)
-  exp.counts <- (1-ppois(0:max(max(counts), 20), mean(counts)))*cohortsize
-  names(exp.counts) <- c(seq(0, max(max(counts), 20), by=1))
-  cutoff <- as.numeric(names(exp.counts[exp.counts<1])[1])
-  df.outliers <- df[df$Freq>cutoff,]
-  outliers <- c(as.character(df.outliers$samples))
-  outlier.frac <- paste(length(outliers), cohortsize, sep='/')
-  print(paste("# Mean denovo count", mean(counts), sep=' : '))
-  print(paste("# Max denovo count cutoff", cutoff, sep=' : '))
-  print(paste("# Outlier samples", outlier.frac, sep=' : '))
-  outfile <- paste(op, 'outlier_samples.txt', sep='.')
-  write.table(df.outliers[,c(1,3)], outfile ,quote=F, row.names=F, sep='\t')
-  print(paste("# outlier samples written to", outfile, sep=' : '))
-  return(outliers)
 }
 
 
@@ -311,32 +274,32 @@ get_vaf_dist <- function(a, b, n, sample_avg_dp){
 fitReadCounts <- function(a, op) {
   a$refdp <- as.numeric(a$refdp)
   a$altdp <- as.numeric(a$altdp) 
-  N = a$refdp + a$altdp 
-  x = cbind.data.frame(a, N)
+  N <- a$refdp + a$altdp 
+  x <- cbind.data.frame(a, N)
   x$vaf <- x$altdp/x$N
   
   ## generate depth table
-  results = estimateTheta(x)  
-  results = results[results$m  > 0, ]
+  results <- estimateTheta(x)  
+  results <- results[results$m  > 0, ]
   
   ## theta and p estimations 
   if(unname(table(results$m>20))[1]<=0.8*nrow(results)){ # if more than 20% of DP values in results have >20 variants supporting, use m>20 (only data from DP values with enough support)
-    thetahat = sum(results[results$N > 12 & results$m > 20, ]$m*results[results$N > 12 & results$m > 20, ]$theta)/sum(results[results$N > 12 & results$m > 20, ]$m)
+    thetahat <- sum(results[results$N > 12 & results$m > 20, ]$m*results[results$N > 12 & results$m > 20, ]$theta)/sum(results[results$N > 12 & results$m > 20, ]$m)
   }else { # if less than 20% of DP values in results have >20 variants supporting, use m>0 (all data available)
-    thetahat = sum(results$m*results$theta)/sum(results$m)
+    thetahat <- sum(results$m*results$theta)/sum(results$m)
   }
   
   ## initial EM estimation of mosaic fraction
   print("Running E-M (iteration 1)")
-  EMout = mofracEM(x, thetahat, op, 'no')
-  mofrac = EMout[1,]$mofrac
-  movaf = EMout[1,]$movaf
-  germvaf = EMout[1,]$germvaf
-  mp = germvaf
-  vmin = EMout[1,]$minvaf
-  vmax = EMout[1,]$maxvaf
-  tmp.mo.vaf = EMout[EMout$ind==1,]$allvaf
-  tmp.germ.vaf = EMout[EMout$ind==2,]$allvaf
+  EMout <- mofracEM(x, thetahat, op, 'no')
+  mofrac <- EMout[1,]$mofrac
+  movaf <- EMout[1,]$movaf
+  germvaf <- EMout[1,]$germvaf
+  mp <- germvaf
+  vmin <- EMout[1,]$minvaf
+  vmax <- EMout[1,]$maxvaf
+  tmp.mo.vaf <- EMout[EMout$ind==1,]$allvaf
+  tmp.germ.vaf <- EMout[EMout$ind==2,]$allvaf
   
   ## fit mosaic distribution to estimate parameters
   #fit.mo <- fitdist(tmp.mo.vaf, 'beta') # shape1=6.655298, shape2=45.098363
@@ -353,11 +316,11 @@ fitReadCounts <- function(a, op) {
   ## calculate p values for candidates
   pvalues <- testBetaBinomial(x, mp, thetahat)
   padj <- p.adjust(pvalues, method="BH")
-  x = cbind.data.frame(x, pvalues)
-  x = cbind.data.frame(x, padj)
+  x <- cbind.data.frame(x, pvalues)
+  x <- cbind.data.frame(x, padj)
   
   ##calculate likelihood ratio and bayes factor
-  lrcut = postcut/mofrac # use LR cutoff corresponding to posterior odds of postcut, given EM mosaic fraction
+  lrcut <- postcut/mofrac # use LR cutoff corresponding to posterior odds of postcut, given EM mosaic fraction
   x$lr <- mapply(likelihood_ratio, x$altdp, x$N, thetahat, mp)
   
   x$bf <- mapply(bayes_factor, x$altdp, x$N, thetahat, mp, fit.mo.shape1, fit.mo.shape2, n_sample=200, sample_avg_dp) # note: use n_sample=1000 for low coverage
@@ -375,25 +338,25 @@ fitReadCounts <- function(a, op) {
   ## Exclude likely mosaic sites and re-estimate parameters
   x.non <- x[x$col=="black",]
   results.non <- estimateTheta(x.non)
-  results.non = results.non[results.non$m  > 0, ]
+  results.non <- results.non[results.non$m  > 0, ]
   
   ## theta and p estimations
   if(unname(table(results.non$m>20))[1]<=0.8*nrow(results.non)){ # if more than 20% of DP values in results have >20 variants supporting, use m>20 (only data from DP values with enough support)
-    thetahat.non = sum(results.non[results.non$N > 12 & results.non$m > 20, ]$m*results.non[results.non$N > 12 & results.non$m > 20, ]$theta)/sum(results.non[results.non$N > 12 & results.non$m > 20, ]$m)
+    thetahat.non <- sum(results.non[results.non$N > 12 & results.non$m > 20, ]$m*results.non[results.non$N > 12 & results.non$m > 20, ]$theta)/sum(results.non[results.non$N > 12 & results.non$m > 20, ]$m)
   } else { # if less than 20% of DP values in results have >20 variants supporting, use m>0 (all data available)
-    thetahat.non = sum(results.non$m*results.non$theta)/sum(results.non$m)
+    thetahat.non <- sum(results.non$m*results.non$theta)/sum(results.non$m)
   }
   
   print("Running E-M (iteration 2)")
-  EMout2 = mofracEM(x, thetahat.non, op, 'yes')
-  mofrac = EMout2[1,]$mofrac
-  movaf = EMout2[1,]$movaf
-  germvaf = EMout2[1,]$germvaf
-  mp.non = germvaf
-  vmin = EMout2[1,]$minvaf
-  vmax = EMout2[1,]$maxvaf
-  tmp.mo.vaf = EMout2[EMout2$ind==1,]$allvaf
-  tmp.germ.vaf = EMout2[EMout2$ind==2,]$allvaf
+  EMout2 <- mofracEM(x, thetahat.non, op, 'yes')
+  mofrac <- EMout2[1,]$mofrac
+  movaf <- EMout2[1,]$movaf
+  germvaf <- EMout2[1,]$germvaf
+  mp.non <- germvaf
+  vmin <- EMout2[1,]$minvaf
+  vmax <- EMout2[1,]$maxvaf
+  tmp.mo.vaf <- EMout2[EMout2$ind==1,]$allvaf
+  tmp.germ.vaf <- EMout2[EMout2$ind==2,]$allvaf
 
   ## fit mosaic distribution to estimate parameters
   #fit.mo <- fitdist(tmp.mo.vaf, 'beta') # shape1=6.655298, shape2=45.098363
@@ -406,8 +369,8 @@ fitReadCounts <- function(a, op) {
   fit.germ.shape1 <- fit.germ$estimate[['shape1']]
   fit.germ.shape2 <- fit.germ$estimate[['shape2']]
   
-  lrcut = postcut/mofrac # use LR cutoff corresponding to posterior odds of 5, given EM mosaic fraction
-  mp.non = germvaf
+  lrcut <- postcut/mofrac # use LR cutoff corresponding to posterior odds of 5, given EM mosaic fraction
+  mp.non <- germvaf
   print(c(mofrac, movaf, germvaf))
   print(c(paste("# mp", mp.non, sep=": "), paste("thetahat", thetahat.non, sep=": ")))
   print(paste("# LR cutoff", lrcut, sep=': '))
@@ -417,8 +380,8 @@ fitReadCounts <- function(a, op) {
   padj <- p.adjust(pvalues, method="BH") # add column for adjusted p.value
   
   ##  generate updated set of candidates
-  x$pvalues = pvalues
-  x$padj = padj
+  x$pvalues <- pvalues
+  x$padj <- padj
   
   ##  generate updated set of candidates
   ## calculate LR and BF
@@ -516,7 +479,7 @@ fitReadCounts <- function(a, op) {
   lines(sort(exp.p.log, decreasing=TRUE), sort(exp.p.log, decreasing=TRUE), col='red')
   dev.off()
   
-  pnamelist = c(fdrname, p1name, p2name, p3name, qq.p, paste(op, "EM.png", sep='.'))
+  pnamelist = c(p1name, p2name, p3name, qq.p, paste(op, "EM.png", sep='.'))
   print(paste('####### OUTPUT PLOT', pnamelist, sep=': '))
   
   return(results)
@@ -536,15 +499,6 @@ postcut <- as.integer(args[3])
 cohortsize <- as.integer(args[4])
 sample_avg_dp <- as.integer(args[5])
 print(c(paste("Input File", fname, sep=': ') , paste("Outfile prefix",outprefix, sep=': '), paste("Posterior Odds Cutoff",postcut, sep=': '), paste("Cohortsize",cohortsize, sep=': '), paste("Dataset Sample Avg DP",sample_avg_dp, sep=': ')))
-
-## TESTING
-setwd('~/Documents/talkowski_lab/projects/asd_mosaicism/ssc/new_batch_ssc_500/')
-fname <- 'ssc_batch_500.18Aug.denovo.txt'
-outprefix <- 'test_v2'
-op <- outprefix
-postcut <- 10
-cohortsize <- 523
-sample_avg_dp <- 80
 
 
 #############################################
