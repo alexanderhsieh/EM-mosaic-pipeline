@@ -63,6 +63,7 @@ workflow EM_mosaic_pipeline {
 		## filtered denovo to mosaic
 		Int postcut
 		Int cohort_size 
+		Int sample_avg_dp
 
 	}
 
@@ -255,6 +256,8 @@ workflow EM_mosaic_pipeline {
 		input:
 			infile = update2.outfile,
 			postcut = postcut,
+			cohort_size = cohort_size,
+			sample_avg_dp = sample_avg_dp,
 			outprefix = output_prefix
 	}
 
@@ -262,6 +265,7 @@ workflow EM_mosaic_pipeline {
 		File denovos = detect_mosaic.denovos
 		File mosaics = detect_mosaic.mosaics
 		Array[File] output_plots = detect_mosaic.output_plots
+		File filter_counts = summarize_counts.outfile
 	}
 
 
