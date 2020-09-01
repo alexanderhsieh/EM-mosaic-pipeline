@@ -278,9 +278,42 @@ fitReadCounts <- function(a, op) {
   x <- cbind.data.frame(a, N)
   x$vaf <- x$altdp/x$N
   
+  rawct <- nrow(x) # save raw count
+  
+  ## remove variants with 0 refdp or altdp
+  x <- x[x$refdp>0 & x$altdp>0,]
+  
+  ## parse out de novos passing all filters and report count
+  
+  if('filter' %in% colnames(x)){
+    x <- x[!grepl('FAIL', x$filter),]
+    #x <- x[x$filter == '.',]
+  }
+  if('IGV' %in% colnames(x)){
+    x <- x[x$IGV %in% c('.', 'ok'),]
+  }
+  if('outlier_flag' %in% colnames(x)){
+    x <- x[x$outlier_flag == 'FALSE',]
+  }
+  print(paste(paste('Raw: ', rawct, sep=''), paste('Passing Filters:', nrow(x), sep=''), paste('(Removed: ', rawct - nrow(x), ')', sep=''),sep='\n'))
+  
+  ## FIRST PASS
+  
+  ## check if there is enough data to estimate parameters; otherwise exit with message
+  if(nrow(x) < 50){
+    stop("Not enough data in to estimate parameters: <50 variants in callset" )
+    quit()
+  }
+  
   ## generate depth table
   results <- estimateTheta(x)  
   results <- results[results$m  > 0, ]
+  
+  ## check if there is enough data to estimate parameters; otherwise exit with message
+  if(nrow(results) == 0){
+    stop("Not enough data in to estimate parameters: <3 variants per VAF bin")
+    quit()
+  }
   
   ## theta and p estimations 
   if(unname(table(results$m>20))[1]<=0.8*nrow(results)){ # if more than 20% of DP values in results have >20 variants supporting, use m>20 (only data from DP values with enough support)
